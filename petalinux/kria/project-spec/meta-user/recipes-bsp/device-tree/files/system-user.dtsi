@@ -1,0 +1,27 @@
+/include/ "system-conf.dtsi"
+/ {
+    dummy_fclk0_user: dummy_fclk0_user {
+        compatible = "syscon";  // benign compatibility
+        clocks = <&zynqmp_clk 71>;
+        clock-names = "aclk";
+        status = "okay";
+    };
+    
+};
+&zynqmp_clk {
+    fclk-enable = <0x1>;
+    assigned-clocks = <&zynqmp_clk 71>;
+    assigned-clock-rates = <100000000>;
+};
+/* SD */
+
+&sdhci1 {
+   disable-wp;
+   no-1-8-v;
+};
+
+/* USB */
+&dwc3_0 {
+   status = "okay";
+   dr_mode = "host";
+};
