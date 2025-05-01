@@ -116,6 +116,13 @@ begin
   data_s_tready_o <= axis_s2mm_tready_i;
   axis_mm2s_tready_o <= data_m_tready_i;
 
+  data_m_tdata_o <= axis_mm2s_tdata_i;
+  data_m_tvalid_o <= axis_mm2s_tvalid_i;
+  
+  
+  axis_s2mm_tdata_o <= data_s_tdata_i;
+  axis_s2mm_tvalid_o <= data_s_tvalid_i;
+  
   -- need to connect input/output axis 
   -- need to sort out words/bytes;
   process(clk_i)

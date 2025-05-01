@@ -103,7 +103,7 @@ signal dma_controller_s_tdata               : std_logic_vector(DMA_S2MM_DATA_WID
 signal dma_controller_s_tvalid              : std_logic;   
 signal dma_controller_s_tready              : std_logic; -- Usually this is an output, but in this case the axi datamover controller only monitors the master channel of datamover, the slave module receiving the data should assign the tready.   
 signal dma_controller_s_tlast               : std_logic; 
-
+signal dma_controller_write_start_prev      : std_logic;
 attribute mark_debug : string;
 --attribute mark_debug of counter: signal is "true";
 --attribute mark_debug of gpio_out: signal is "true";
@@ -268,10 +268,21 @@ port map(
   read_reg_i        => (others=>( others =>'0')),
   write_reg_o       => axil_write_regs
 );
+dma_controller_s_tdata <= std_logic_vector(counter(15 downto 0));
 process(pl_clk0_0)
 begin
  if rising_edge(pl_clk0_0) then
-    counter <= counter + 1;
+    dma_controller_write_start_prev <= dma_controller_write_start;
+    if dma_controller_write_start_prev = '0' and dma_controller_write_start = '1' then
+        dma_controller_s_tvalid <= '1';
+        if dma_controller_s_tready = '1' then
+            counter <= counter + 1;
+        end if;
+    end if;
+    if dma_controller_write_start = '0' then 
+        dma_controller_s_tvalid <= '0';
+    end if;
+    
  end if;
 end process;
 
