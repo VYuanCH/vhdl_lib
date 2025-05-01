@@ -105,12 +105,27 @@ signal dma_controller_s_tready              : std_logic; -- Usually this is an o
 signal dma_controller_s_tlast               : std_logic; 
 
 attribute mark_debug : string;
-attribute mark_debug of counter: signal is "true";
-attribute mark_debug of gpio_out: signal is "true";
+--attribute mark_debug of counter: signal is "true";
+--attribute mark_debug of gpio_out: signal is "true";
+--attribute mark_debug of axil_master: signal is "true";
+--attribute mark_debug of axil_slave: signal is "true";
+--attribute mark_debug of axil_write_regs: signal is "true";
 
-attribute mark_debug of axil_master: signal is "true";
-attribute mark_debug of axil_slave: signal is "true";
-attribute mark_debug of axil_write_regs: signal is "true";
+attribute mark_debug of dma_controller_m_tdata   : signal is "true";
+attribute mark_debug of dma_controller_m_tvalid  : signal is "true";
+attribute mark_debug of dma_controller_m_tready  : signal is "true";
+attribute mark_debug of dma_controller_m_tlast   : signal is "true";
+attribute mark_debug of dma_controller_s_tdata   : signal is "true";
+attribute mark_debug of dma_controller_s_tvalid  : signal is "true";
+attribute mark_debug of dma_controller_s_tready  : signal is "true";
+attribute mark_debug of dma_controller_s_tlast   : signal is "true";
+
+attribute mark_debug of S_DMA_MM2S_CMD_0_tdata   : signal is "true";
+attribute mark_debug of S_DMA_MM2S_CMD_0_tready  : signal is "true";
+attribute mark_debug of S_DMA_MM2S_CMD_0_tvalid  : signal is "true";
+attribute mark_debug of S_DMA_S2MM_CMD_0_tdata   : signal is "true";
+attribute mark_debug of S_DMA_S2MM_CMD_0_tready  : signal is "true";
+attribute mark_debug of S_DMA_S2MM_CMD_0_tvalid  : signal is "true";
 begin
 ibd_1 : entity work.design_1_wrapper
 port map(
@@ -148,12 +163,12 @@ port map(
     M_AXIS_MM2S_STS_0_tdata     => M_DMA_MM2S_STS_0_tdata,    
     M_AXIS_MM2S_STS_0_tkeep     => M_DMA_MM2S_STS_0_tkeep,    
     M_AXIS_MM2S_STS_0_tlast     => M_DMA_MM2S_STS_0_tlast,    
-    M_AXIS_MM2S_STS_0_tready    => M_DMA_MM2S_STS_0_tready,      
+    M_AXIS_MM2S_STS_0_tready    => '1',      
     M_AXIS_MM2S_STS_0_tvalid    => M_DMA_MM2S_STS_0_tvalid,      
     M_AXIS_S2MM_STS_0_tdata     => M_DMA_S2MM_STS_0_tdata,    
     M_AXIS_S2MM_STS_0_tkeep     => M_DMA_S2MM_STS_0_tkeep,    
     M_AXIS_S2MM_STS_0_tlast     => M_DMA_S2MM_STS_0_tlast,    
-    M_AXIS_S2MM_STS_0_tready    => M_DMA_S2MM_STS_0_tready,      
+    M_AXIS_S2MM_STS_0_tready    => '1',      
     M_AXIS_S2MM_STS_0_tvalid    => M_DMA_S2MM_STS_0_tvalid,      
     S_AXIS_MM2S_CMD_0_tdata     => S_DMA_MM2S_CMD_0_tdata,    
     S_AXIS_MM2S_CMD_0_tready    => S_DMA_MM2S_CMD_0_tready,      
@@ -169,6 +184,8 @@ port map(
     
 );
 
+
+dma_controller_m_tready <= '1';
 
 iaxi_datamover_controller : entity work.axi_datamover_controller
 generic map (
@@ -218,13 +235,13 @@ port map(
   
   -- axi_datamover cmd interface
   mm2s_cmd_m_tdata_o   => S_DMA_MM2S_CMD_0_tdata,
-  mm2s_cmd_m_tvalid_o  => S_DMA_MM2S_CMD_0_tready,  
-  mm2s_cmd_m_tready_i  => S_DMA_MM2S_CMD_0_tvalid,  
+  mm2s_cmd_m_tvalid_o  => S_DMA_MM2S_CMD_0_tvalid,  
+  mm2s_cmd_m_tready_i  => S_DMA_MM2S_CMD_0_tready,  
 
   -- axi_datamover cmd interface
   s2mm_cmd_m_tdata_o   => S_DMA_S2MM_CMD_0_tdata, 
-  s2mm_cmd_m_tvalid_o  => S_DMA_S2MM_CMD_0_tready,  
-  s2mm_cmd_m_tready_i  => S_DMA_S2MM_CMD_0_tvalid  
+  s2mm_cmd_m_tvalid_o  => S_DMA_S2MM_CMD_0_tvalid,  
+  s2mm_cmd_m_tready_i  => S_DMA_S2MM_CMD_0_tready  
 );
 
 dma_controller_write_start                      <= axil_write_regs(0)(0);
@@ -259,3 +276,4 @@ begin
 end process;
 
 end Behavioral;
+
