@@ -4,6 +4,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 package basic_pkg is
   function ceil_log2(n : positive) return natural;
+  function ceil_divide(a : integer; b : integer) return integer;
 
 end package;
 
@@ -19,4 +20,9 @@ package body basic_pkg is
     end loop;
     return result;
   end;
+  function ceil_divide(a : integer; b : integer) return integer is
+  begin
+      return (a + b - 1) / b;
+  end function;
 end package body;
+

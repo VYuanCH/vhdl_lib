@@ -20,7 +20,7 @@ entity axi_datamover_controller is
       MM2S_CMD_WIDTH      : natural := 96;
       S2MM_CMD_WIDTH      : natural := 96;
       ADDRESS_WIDTH       : natural := 49;
-      NUM_OF_WORDS_WIDTH  : natural := 31
+      NUM_OF_WORDS_WIDTH  : natural := 32
 
 
   );
@@ -82,6 +82,20 @@ architecture Behavioral of axi_datamover_controller is
   type datamover_write_t is (IDLE, INIT, SET_CMD,WAIT_CMD_READY,WRITE_DATA,WAIT_FOR_LAST_SAMPLE, DONE);
   signal datamover_write_sm : datamover_write_t := IDLE;
   signal read_prev : std_logic;
+
+  signal last_read_transfer         : std_logic;   
+  signal read_address_reg           : unsigned(ADDRESS_WIDTH - 1 downto 0); 
+  signal read_num_of_words_reg      : unsigned(NUM_OF_WORDS_WIDTH - 1 downto 0);       
+  signal read_bytes_remain          : unsigned(NUM_OF_WORDS_WIDTH + ceil_log2(BYTES_EACH_WORD_READ) - 1 downto 0);       
+  signal read_bytes_counter         : unsigned(NUM_OF_WORDS_WIDTH + ceil_log2(BYTES_EACH_WORD_READ) - 1 downto 0);      
+
+
+  signal write_prev                 : std_logic;
+  signal last_write_transfer        : std_logic;          
+  signal write_address_reg          : unsigned(ADDRESS_WIDTH - 1 downto 0);        
+  signal write_num_of_words_reg     : unsigned(NUM_OF_WORDS_WIDTH - 1 downto 0);        
+  signal write_bytes_remain         : unsigned(NUM_OF_WORDS_WIDTH + ceil_log2(BYTES_EACH_WORD_WRITE) - 1 downto 0);        
+  signal write_bytes_counter        : unsigned(NUM_OF_WORDS_WIDTH + ceil_log2(BYTES_EACH_WORD_WRITE) - 1 downto 0);          
 begin
   data_s_tready_o <= axis_s2mm_tready_i;
   axis_mm2s_tready_o <= data_m_tready_i;
@@ -109,7 +123,7 @@ begin
           mm2s_cmd_m_tdata_o(22 downto MM2S_BTT_WIDTH)    <= (others =>'0');
           if read_bytes_remain > TRANSFER_SIZE_BYTES then
             mm2s_cmd_m_tdata_o(MM2S_BTT_WIDTH - 1 downto 0) <= std_logic_vector(to_unsigned(TRANSFER_SIZE_BYTES,MM2S_BTT_WIDTH));
-            read_bytes_counter <= TRANSFER_SIZE_BYTES - BYTES_EACH_WORD_READ;
+            read_bytes_counter <= to_unsigned(TRANSFER_SIZE_BYTES - BYTES_EACH_WORD_READ,NUM_OF_WORDS_WIDTH + ceil_log2(BYTES_EACH_WORD_READ));
           else 
             mm2s_cmd_m_tdata_o(MM2S_BTT_WIDTH - 1 downto 0) <= std_logic_vector(read_bytes_remain(MM2S_BTT_WIDTH - 1 downto 0));
             read_bytes_counter <= read_bytes_remain - BYTES_EACH_WORD_READ;
@@ -119,7 +133,7 @@ begin
           mm2s_cmd_m_tdata_o(29 downto 24) <= (others => '0');
           mm2s_cmd_m_tdata_o(30)           <= '1'; --EOF
           mm2s_cmd_m_tdata_o(31)           <= '0';
-          mm2s_cmd_m_tdata_o(ADDR_BYTES + 31 downto 32) <= resize(read_address_reg,ADDR_BYTES);
+          mm2s_cmd_m_tdata_o(ADDR_BYTES + 31 downto 32) <= std_logic_vector(resize(read_address_reg,ADDR_BYTES));
           mm2s_cmd_m_tdata_o(ADDR_BYTES + 35 downto ADDR_BYTES + 32) <= (others => '0');
           mm2s_cmd_m_tdata_o(ADDR_BYTES + 39 downto ADDR_BYTES + 36) <= (others => '0');
           mm2s_cmd_m_tdata_o(ADDR_BYTES + 43 downto ADDR_BYTES + 40) <= (others => '0');
@@ -189,7 +203,7 @@ begin
           datamover_write_sm <= WAIT_CMD_READY;
           if write_bytes_remain > TRANSFER_SIZE_BYTES then
             s2mm_cmd_m_tdata_o(S2MM_BTT_WIDTH - 1 downto 0) <= std_logic_vector(to_unsigned(TRANSFER_SIZE_BYTES,S2MM_BTT_WIDTH));
-            write_bytes_counter <= TRANSFER_SIZE_BYTES - BYTES_EACH_WORD_WRITE;
+            write_bytes_counter <= to_unsigned(TRANSFER_SIZE_BYTES - BYTES_EACH_WORD_WRITE,NUM_OF_WORDS_WIDTH + ceil_log2(BYTES_EACH_WORD_WRITE));
           else 
             s2mm_cmd_m_tdata_o(S2MM_BTT_WIDTH - 1 downto 0) <= std_logic_vector(write_bytes_remain(S2MM_BTT_WIDTH - 1 downto 0));
             write_bytes_counter <= write_bytes_counter - BYTES_EACH_WORD_WRITE;
@@ -199,7 +213,7 @@ begin
           s2mm_cmd_m_tdata_o(29 downto 24) <= (others => '0');
           s2mm_cmd_m_tdata_o(30)           <= '1'; --EOF
           s2mm_cmd_m_tdata_o(31)           <= '0';
-          s2mm_cmd_m_tdata_o(ADDR_BYTES + 31 downto 32) <= resize(write_address_reg,ADDR_BYTES);
+          s2mm_cmd_m_tdata_o(ADDR_BYTES + 31 downto 32) <= std_logic_vector(resize(write_address_reg,ADDR_BYTES));
           s2mm_cmd_m_tdata_o(ADDR_BYTES + 35 downto ADDR_BYTES + 32) <= (others => '0');
           s2mm_cmd_m_tdata_o(ADDR_BYTES + 39 downto ADDR_BYTES + 36) <= (others => '0');
           s2mm_cmd_m_tdata_o(ADDR_BYTES + 43 downto ADDR_BYTES + 40) <= (others => '0');
