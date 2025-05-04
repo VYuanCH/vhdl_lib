@@ -54,17 +54,6 @@ signal dma_axil_reg_master  : axil_master_t;
 signal dma_axil_reg_slave   : axil_slave_t;
 signal axil_write_regs  : array_slv_t(NUMBER_OF_AXIL_REGISTERS - 1 downto 0)(AXIL_DATA_W - 1 downto 0);
 
-signal M_DMA_MM2S_STS_0_tdata        : STD_LOGIC_VECTOR ( 7 downto 0 );    
-signal M_DMA_MM2S_STS_0_tkeep        : STD_LOGIC_VECTOR ( 0 to 0 );    
-signal M_DMA_MM2S_STS_0_tlast        : STD_LOGIC;    
-signal M_DMA_MM2S_STS_0_tready       : STD_LOGIC;      
-signal M_DMA_MM2S_STS_0_tvalid       : STD_LOGIC;      
-signal M_DMA_S2MM_STS_0_tdata        : STD_LOGIC_VECTOR ( 31 downto 0 );    
-signal M_DMA_S2MM_STS_0_tkeep        : STD_LOGIC_VECTOR ( 3 downto 0 );    
-signal M_DMA_S2MM_STS_0_tlast        : STD_LOGIC;    
-signal M_DMA_S2MM_STS_0_tready       : STD_LOGIC;      
-signal M_DMA_S2MM_STS_0_tvalid       : STD_LOGIC;          
-   
 signal dma_controller_m_tdata               : std_logic_vector(MM2S_DATA_WIDTH - 1 downto 0); 
 signal dma_controller_m_tvalid              : std_logic;   
 signal dma_controller_m_tready              : std_logic;   
@@ -80,8 +69,8 @@ attribute mark_debug : string;
 --attribute mark_debug of counter: signal is "true";
 --attribute mark_debug of gpio_out: signal is "true";
 --attribute mark_debug of axil_master: signal is "true";
---attribute mark_debug of axil_slave: signal is "true";
---attribute mark_debug of axil_write_regs: signal is "true";
+attribute mark_debug of dma_interface_master: signal is "true";
+attribute mark_debug of dma_interface_slave: signal is "true";
 
 attribute mark_debug of dma_controller_m_tdata   : signal is "true";
 attribute mark_debug of dma_controller_m_tvalid  : signal is "true";
@@ -143,16 +132,16 @@ port map(
     dma_reg_axil_rvalid         => dma_axil_reg_slave.rvalid,
 
 
-    M_AXIS_MM2S_STS_0_tdata     => M_DMA_MM2S_STS_0_tdata,    
-    M_AXIS_MM2S_STS_0_tkeep     => M_DMA_MM2S_STS_0_tkeep,    
-    M_AXIS_MM2S_STS_0_tlast     => M_DMA_MM2S_STS_0_tlast,    
-    M_AXIS_MM2S_STS_0_tready    => '1',      
-    M_AXIS_MM2S_STS_0_tvalid    => M_DMA_MM2S_STS_0_tvalid,      
-    M_AXIS_S2MM_STS_0_tdata     => M_DMA_S2MM_STS_0_tdata,    
-    M_AXIS_S2MM_STS_0_tkeep     => M_DMA_S2MM_STS_0_tkeep,    
-    M_AXIS_S2MM_STS_0_tlast     => M_DMA_S2MM_STS_0_tlast,    
-    M_AXIS_S2MM_STS_0_tready    => '1',      
-    M_AXIS_S2MM_STS_0_tvalid    => M_DMA_S2MM_STS_0_tvalid,      
+    M_AXIS_MM2S_STS_0_tdata     => dma_interface_master.mm2s_sts_tdata,    
+    M_AXIS_MM2S_STS_0_tkeep     => open,    
+    M_AXIS_MM2S_STS_0_tlast     => dma_interface_master.mm2s_sts_tlast,    
+    M_AXIS_MM2S_STS_0_tready    => dma_interface_slave.mm2s_sts_tready,      
+    M_AXIS_MM2S_STS_0_tvalid    => dma_interface_master.mm2s_sts_tvalid,      
+    M_AXIS_S2MM_STS_0_tdata     => dma_interface_master.s2mm_sts_tdata,    
+    M_AXIS_S2MM_STS_0_tkeep     => open,    
+    M_AXIS_S2MM_STS_0_tlast     => dma_interface_master.s2mm_sts_tlast,    
+    M_AXIS_S2MM_STS_0_tready    => dma_interface_slave.s2mm_sts_tready,      
+    M_AXIS_S2MM_STS_0_tvalid    => dma_interface_master.s2mm_sts_tvalid,      
 
     M_AXIS_MM2S_0_tdata         => dma_interface_master.axis_mm2s_tdata,
     M_AXIS_MM2S_0_tkeep         => open,
@@ -163,7 +152,7 @@ port map(
     S_AXIS_MM2S_CMD_0_tready    => dma_interface_master.mm2s_cmd_tready,      
     S_AXIS_MM2S_CMD_0_tvalid    => dma_interface_slave.mm2s_cmd_tvalid,      
     S_AXIS_S2MM_0_tdata         => dma_interface_slave.axis_s2mm_tdata,
-    S_AXIS_S2MM_0_tkeep         => (others => '0'),
+    S_AXIS_S2MM_0_tkeep         => (others => '1'),
     S_AXIS_S2MM_0_tlast         => dma_interface_slave.axis_s2mm_tlast,
     S_AXIS_S2MM_0_tready        => dma_interface_master.axis_s2mm_tready,  
     S_AXIS_S2MM_0_tvalid        => dma_interface_slave.axis_s2mm_tvalid,  

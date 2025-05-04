@@ -111,7 +111,15 @@ begin
     mm2s_cmd_m_tready_i  => dma_interface_master_i.mm2s_cmd_tready,  
     s2mm_cmd_m_tdata_o   => dma_interface_slave_o.s2mm_cmd_tdata, 
     s2mm_cmd_m_tvalid_o  => dma_interface_slave_o.s2mm_cmd_tvalid,  
-    s2mm_cmd_m_tready_i  => dma_interface_master_i.s2mm_cmd_tready  
+    s2mm_cmd_m_tready_i  => dma_interface_master_i.s2mm_cmd_tready,
+    
+    mm2s_sts_tdata_i   => dma_interface_master_i.mm2s_sts_tdata,
+    mm2s_sts_tvalid_i  => dma_interface_master_i.mm2s_sts_tvalid,  
+    mm2s_sts_tready_o  => dma_interface_slave_o.mm2s_sts_tready,  
+    s2mm_sts_tdata_i   => dma_interface_master_i.s2mm_sts_tdata, 
+    s2mm_sts_tvalid_i  => dma_interface_master_i.s2mm_sts_tvalid,  
+    s2mm_sts_tready_o  => dma_interface_slave_o.s2mm_sts_tready 
+    
   );
 
 

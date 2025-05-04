@@ -3,9 +3,10 @@ import os
 import struct
 
 # === CONFIGURE YOUR ADDRESS INFO HERE ===
-AXIL_BASE_ADDR = 0xA0020000  # replace with your actual base address
+AXIL_BASE_ADDR = 0xA0030000  # replace with your actual base address
 AXIL_RANGE     = 0x1000      # size of your register map (e.g., 4K)
-
+DMA_CAPTURE_SIZE = 0x1000000
+DMA_START_ADDR   = 0x60000000
 # === OPEN /dev/mem ===
 fd = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
 
@@ -26,19 +27,13 @@ def read_reg(reg_index):
     return struct.unpack("<I", data)[0]
 
 # === TEST: Write and Read a Register ===
+#
+write_reg(5, DMA_START_ADDR)
+write_reg(6, 0x00000000)
+write_reg(7, DMA_CAPTURE_SIZE)
+write_reg(4, 0x1)
+write_reg(4, 0x0)
 
-write_reg(1, 0x60000000)
-write_reg(2, 0x00000000)
-write_reg(3, 0x10000000)
-write_reg(0, 0x1)
-write_reg(0, 0x0)
-
-#write_reg(5, 0x70000000)
-#write_reg(6, 0x00000000)
-#write_reg(7, 0x00000100)
-#write_reg(4, 0x1)
-#write_reg(4, 0x0)
-#val = read_reg(0x00)
 #print(f"Value read back: 0x{val:08X}")
 
 # === CLEAN UP ===

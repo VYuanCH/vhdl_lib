@@ -15,6 +15,10 @@ package axi_datamover_pkg is
    constant S2MM_BTT_WIDTH      : natural := 16;
    constant MM2S_CMD_WIDTH      : natural := 96;
    constant S2MM_CMD_WIDTH      : natural := 96;
+   constant S2MM_STS_WIDTH      : natural := 8;
+   constant MM2S_STS_WIDTH      : natural := 8;
+   
+   
    constant ADDRESS_WIDTH       : natural := 49;
 
 
@@ -25,6 +29,13 @@ package axi_datamover_pkg is
     axis_mm2s_tlast       : std_logic;
     mm2s_cmd_tready       : std_logic;
     s2mm_cmd_tready       : std_logic;
+    
+    s2mm_sts_tdata        : std_logic_vector(S2MM_STS_WIDTH - 1 downto 0);
+    s2mm_sts_tlast        : std_logic;
+    s2mm_sts_tvalid       : std_logic;
+    mm2s_sts_tdata        : std_logic_vector(MM2S_STS_WIDTH - 1 downto 0);
+    mm2s_sts_tlast        : std_logic;
+    mm2s_sts_tvalid       : std_logic;
   end record;
   
   type dma_ports_slave_t is record
@@ -36,5 +47,9 @@ package axi_datamover_pkg is
     mm2s_cmd_tvalid       : std_logic;
     s2mm_cmd_tdata        : std_logic_vector(S2MM_CMD_WIDTH - 1 downto 0);
     s2mm_cmd_tvalid       : std_logic;
+    
+    s2mm_sts_tready       : std_logic;
+    mm2s_sts_tready       : std_logic;
+    
   end record;
 end package;
