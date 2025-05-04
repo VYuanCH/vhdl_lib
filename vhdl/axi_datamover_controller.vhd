@@ -5,24 +5,10 @@ use IEEE.NUMERIC_STD.ALL;
 use work.axil_interface_pkg.all;
 use work.array_types.all;
 use work.basic_pkg.all;
-
+use work.axi_datamover_pkg.all;
 entity axi_datamover_controller is
   generic (
-      -- axi datamover configurations
-      MM2S_DATA_WIDTH : natural := 16;
-      S2MM_DATA_WIDTH : natural := 16;
-      MM2S_MEM_DATA_WIDTH : natural := 128;
-      S2MM_MEM_DATA_WIDTH : natural := 128;
-      MM2S_MAX_BURST_SIZE : natural := 256;
-      S2MM_MAX_BURST_SIZE : natural := 256;
-      MM2S_BTT_WIDTH      : natural := 16;
-      S2MM_BTT_WIDTH      : natural := 16;
-      MM2S_CMD_WIDTH      : natural := 96;
-      S2MM_CMD_WIDTH      : natural := 96;
-      ADDRESS_WIDTH       : natural := 49;
       NUM_OF_WORDS_WIDTH  : natural := 32
-
-
   );
   port (
     clk_i                : in std_logic;
@@ -266,7 +252,7 @@ begin
           end if;
 
         when WAIT_FOR_LAST_SAMPLE =>
-          if axis_mm2s_tvalid_i = '1' and data_m_tready_i = '1' then
+          if axis_s2mm_tready_i = '1' and data_s_tvalid_i = '1'  then
             axis_s2mm_tlast_o <= '0';
             if last_write_transfer = '1' then
               datamover_write_sm <= DONE;
@@ -285,4 +271,3 @@ begin
 
 
 end Behavioral;
-

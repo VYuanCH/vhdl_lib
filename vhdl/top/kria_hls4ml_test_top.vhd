@@ -28,6 +28,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use work.axil_interface_pkg.all;
 use work.array_types.all;
+use work.axi_datamover_pkg.all;
+
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
 --library UNISIM;
@@ -39,17 +41,6 @@ end top;
 
 architecture Behavioral of top is
 
-constant  DMA_MM2S_DATA_WIDTH     : natural := 16;
-constant  DMA_S2MM_DATA_WIDTH     : natural := 16;
-constant  DMA_MM2S_MEM_DATA_WIDTH : natural := 128;
-constant  DMA_S2MM_MEM_DATA_WIDTH : natural := 128;
-constant  DMA_MM2S_MAX_BURST_SIZE : natural := 256;
-constant  DMA_S2MM_MAX_BURST_SIZE : natural := 256;
-constant  DMA_MM2S_BTT_WIDTH      : natural := 16;
-constant  DMA_S2MM_BTT_WIDTH      : natural := 16;
-constant  DMA_MM2S_CMD_WIDTH      : natural := 96;
-constant  DMA_S2MM_CMD_WIDTH      : natural := 96;
-constant  DMA_ADDRESS_WIDTH       : natural := 49;
 constant  DMA_NUM_OF_WORDS_WIDTH  : natural := 32;
 
 
@@ -57,15 +48,12 @@ signal pl_clk0_0 : std_logic;
 signal counter   : unsigned(31 downto 0);
 signal gpio_out  : std_logic_vector(31 downto 0);
 constant NUMBER_OF_AXIL_REGISTERS  : natural := 10;
-signal axil_master  : axil_master_t;
-signal axil_slave   : axil_slave_t;
+signal global_axil_reg_master  : axil_master_t;
+signal global_axil_reg_slave   : axil_slave_t;
+signal dma_axil_reg_master  : axil_master_t;
+signal dma_axil_reg_slave   : axil_slave_t;
 signal axil_write_regs  : array_slv_t(NUMBER_OF_AXIL_REGISTERS - 1 downto 0)(AXIL_DATA_W - 1 downto 0);
 
-signal M_DMA_MM2S_0_tdata            : STD_LOGIC_VECTOR ( 15 downto 0 );
-signal M_DMA_MM2S_0_tkeep            : STD_LOGIC_VECTOR ( 1 downto 0 );
-signal M_DMA_MM2S_0_tlast            : STD_LOGIC;
-signal M_DMA_MM2S_0_tready           : STD_LOGIC;  
-signal M_DMA_MM2S_0_tvalid           : STD_LOGIC;  
 signal M_DMA_MM2S_STS_0_tdata        : STD_LOGIC_VECTOR ( 7 downto 0 );    
 signal M_DMA_MM2S_STS_0_tkeep        : STD_LOGIC_VECTOR ( 0 to 0 );    
 signal M_DMA_MM2S_STS_0_tlast        : STD_LOGIC;    
@@ -75,35 +63,19 @@ signal M_DMA_S2MM_STS_0_tdata        : STD_LOGIC_VECTOR ( 31 downto 0 );
 signal M_DMA_S2MM_STS_0_tkeep        : STD_LOGIC_VECTOR ( 3 downto 0 );    
 signal M_DMA_S2MM_STS_0_tlast        : STD_LOGIC;    
 signal M_DMA_S2MM_STS_0_tready       : STD_LOGIC;      
-signal M_DMA_S2MM_STS_0_tvalid       : STD_LOGIC;      
-signal S_DMA_MM2S_CMD_0_tdata        : STD_LOGIC_VECTOR ( 95 downto 0 );    
-signal S_DMA_MM2S_CMD_0_tready       : STD_LOGIC;      
-signal S_DMA_MM2S_CMD_0_tvalid       : STD_LOGIC;      
-signal S_DMA_S2MM_0_tdata            : STD_LOGIC_VECTOR ( 15 downto 0 );
-signal S_DMA_S2MM_0_tkeep            : STD_LOGIC_VECTOR ( 1 downto 0 );
-signal S_DMA_S2MM_0_tlast            : STD_LOGIC;
-signal S_DMA_S2MM_0_tready           : STD_LOGIC;  
-signal S_DMA_S2MM_0_tvalid           : STD_LOGIC;  
-signal S_DMA_S2MM_CMD_0_tdata        : STD_LOGIC_VECTOR ( 95 downto 0 );    
-signal S_DMA_S2MM_CMD_0_tready       : STD_LOGIC;      
-signal S_DMA_S2MM_CMD_0_tvalid       : STD_LOGIC;      
-
-
-signal dma_controller_write_address         : unsigned(DMA_ADDRESS_WIDTH - 1 downto 0);       
-signal dma_controller_write_num_of_words    : unsigned(DMA_NUM_OF_WORDS_WIDTH - 1 downto 0);             
-signal dma_controller_write_start           : std_logic;     
-signal dma_controller_read_address          : unsigned(DMA_ADDRESS_WIDTH - 1 downto 0);       
-signal dma_controller_read_num_of_words     : unsigned(DMA_NUM_OF_WORDS_WIDTH - 1 downto 0);           
-signal dma_controller_read_start            : std_logic;     
-signal dma_controller_m_tdata               : std_logic_vector(DMA_MM2S_DATA_WIDTH - 1 downto 0); 
+signal M_DMA_S2MM_STS_0_tvalid       : STD_LOGIC;          
+   
+signal dma_controller_m_tdata               : std_logic_vector(MM2S_DATA_WIDTH - 1 downto 0); 
 signal dma_controller_m_tvalid              : std_logic;   
 signal dma_controller_m_tready              : std_logic;   
 signal dma_controller_m_tlast               : std_logic; 
-signal dma_controller_s_tdata               : std_logic_vector(DMA_S2MM_DATA_WIDTH - 1 downto 0); 
+signal dma_controller_s_tdata               : std_logic_vector(S2MM_DATA_WIDTH - 1 downto 0); 
 signal dma_controller_s_tvalid              : std_logic;   
 signal dma_controller_s_tready              : std_logic; -- Usually this is an output, but in this case the axi datamover controller only monitors the master channel of datamover, the slave module receiving the data should assign the tready.   
 signal dma_controller_s_tlast               : std_logic; 
 signal dma_controller_write_start_prev      : std_logic;
+signal dma_interface_master                 : dma_ports_master_t;
+signal dma_interface_slave                  : dma_ports_slave_t;
 attribute mark_debug : string;
 --attribute mark_debug of counter: signal is "true";
 --attribute mark_debug of gpio_out: signal is "true";
@@ -120,12 +92,6 @@ attribute mark_debug of dma_controller_s_tvalid  : signal is "true";
 attribute mark_debug of dma_controller_s_tready  : signal is "true";
 attribute mark_debug of dma_controller_s_tlast   : signal is "true";
 
-attribute mark_debug of S_DMA_MM2S_CMD_0_tdata   : signal is "true";
-attribute mark_debug of S_DMA_MM2S_CMD_0_tready  : signal is "true";
-attribute mark_debug of S_DMA_MM2S_CMD_0_tvalid  : signal is "true";
-attribute mark_debug of S_DMA_S2MM_CMD_0_tdata   : signal is "true";
-attribute mark_debug of S_DMA_S2MM_CMD_0_tready  : signal is "true";
-attribute mark_debug of S_DMA_S2MM_CMD_0_tvalid  : signal is "true";
 begin
 ibd_1 : entity work.design_1_wrapper
 port map(
@@ -134,32 +100,49 @@ port map(
     gpio_1_in_tri_i  => std_logic_vector(counter),
     
     -- axil_master
-    M02_AXI_0_awaddr      => axil_master.awaddr,    
-    M02_AXI_0_awprot      => axil_master.awprot,    
-    M02_AXI_0_awvalid     => axil_master.awvalid,    
-    M02_AXI_0_wdata       => axil_master.wdata,  
-    M02_AXI_0_wstrb       => axil_master.wstrb,  
-    M02_AXI_0_wvalid      => axil_master.wvalid,    
-    M02_AXI_0_bready      => axil_master.bready,    
-    M02_AXI_0_araddr      => axil_master.araddr,    
-    M02_AXI_0_arprot      => axil_master.arprot,    
-    M02_AXI_0_arvalid     => axil_master.arvalid,    
-    M02_AXI_0_rready      => axil_master.rready,
+    global_reg_axil_awaddr      => global_axil_reg_master.awaddr,    
+    global_reg_axil_awprot      => global_axil_reg_master.awprot,    
+    global_reg_axil_awvalid     => global_axil_reg_master.awvalid,    
+    global_reg_axil_wdata       => global_axil_reg_master.wdata,  
+    global_reg_axil_wstrb       => global_axil_reg_master.wstrb,  
+    global_reg_axil_wvalid      => global_axil_reg_master.wvalid,    
+    global_reg_axil_bready      => global_axil_reg_master.bready,    
+    global_reg_axil_araddr      => global_axil_reg_master.araddr,    
+    global_reg_axil_arprot      => global_axil_reg_master.arprot,    
+    global_reg_axil_arvalid     => global_axil_reg_master.arvalid,    
+    global_reg_axil_rready      => global_axil_reg_master.rready,
     -- axil slave     
-    M02_AXI_0_awready     => axil_slave.awready,    
-    M02_AXI_0_wready      => axil_slave.wready,    
-    M02_AXI_0_bresp       => axil_slave.bresp,  
-    M02_AXI_0_bvalid      => axil_slave.bvalid,    
-    M02_AXI_0_arready     => axil_slave.arready,    
-    M02_AXI_0_rdata       => axil_slave.rdata,  
-    M02_AXI_0_rresp       => axil_slave.rresp,  
-    M02_AXI_0_rvalid      => axil_slave.rvalid,
+    global_reg_axil_awready     => global_axil_reg_slave.awready,    
+    global_reg_axil_wready      => global_axil_reg_slave.wready,    
+    global_reg_axil_bresp       => global_axil_reg_slave.bresp,  
+    global_reg_axil_bvalid      => global_axil_reg_slave.bvalid,    
+    global_reg_axil_arready     => global_axil_reg_slave.arready,    
+    global_reg_axil_rdata       => global_axil_reg_slave.rdata,  
+    global_reg_axil_rresp       => global_axil_reg_slave.rresp,  
+    global_reg_axil_rvalid      => global_axil_reg_slave.rvalid,
 
-    M_AXIS_MM2S_0_tdata         => M_DMA_MM2S_0_tdata,
-    M_AXIS_MM2S_0_tkeep         => M_DMA_MM2S_0_tkeep,
-    M_AXIS_MM2S_0_tlast         => M_DMA_MM2S_0_tlast,
-    M_AXIS_MM2S_0_tready        => M_DMA_MM2S_0_tready,  
-    M_AXIS_MM2S_0_tvalid        => M_DMA_MM2S_0_tvalid,  
+    dma_reg_axil_awaddr         => dma_axil_reg_master.awaddr,    
+    dma_reg_axil_awprot         => dma_axil_reg_master.awprot,    
+    dma_reg_axil_awvalid        => dma_axil_reg_master.awvalid,    
+    dma_reg_axil_wdata          => dma_axil_reg_master.wdata,  
+    dma_reg_axil_wstrb          => dma_axil_reg_master.wstrb,  
+    dma_reg_axil_wvalid         => dma_axil_reg_master.wvalid,    
+    dma_reg_axil_bready         => dma_axil_reg_master.bready,    
+    dma_reg_axil_araddr         => dma_axil_reg_master.araddr,    
+    dma_reg_axil_arprot         => dma_axil_reg_master.arprot,    
+    dma_reg_axil_arvalid        => dma_axil_reg_master.arvalid,    
+    dma_reg_axil_rready         => dma_axil_reg_master.rready,
+    -- axil slave     
+    dma_reg_axil_awready        => dma_axil_reg_slave.awready,    
+    dma_reg_axil_wready         => dma_axil_reg_slave.wready,    
+    dma_reg_axil_bresp          => dma_axil_reg_slave.bresp,  
+    dma_reg_axil_bvalid         => dma_axil_reg_slave.bvalid,    
+    dma_reg_axil_arready        => dma_axil_reg_slave.arready,    
+    dma_reg_axil_rdata          => dma_axil_reg_slave.rdata,  
+    dma_reg_axil_rresp          => dma_axil_reg_slave.rresp,  
+    dma_reg_axil_rvalid         => dma_axil_reg_slave.rvalid,
+
+
     M_AXIS_MM2S_STS_0_tdata     => M_DMA_MM2S_STS_0_tdata,    
     M_AXIS_MM2S_STS_0_tkeep     => M_DMA_MM2S_STS_0_tkeep,    
     M_AXIS_MM2S_STS_0_tlast     => M_DMA_MM2S_STS_0_tlast,    
@@ -170,49 +153,38 @@ port map(
     M_AXIS_S2MM_STS_0_tlast     => M_DMA_S2MM_STS_0_tlast,    
     M_AXIS_S2MM_STS_0_tready    => '1',      
     M_AXIS_S2MM_STS_0_tvalid    => M_DMA_S2MM_STS_0_tvalid,      
-    S_AXIS_MM2S_CMD_0_tdata     => S_DMA_MM2S_CMD_0_tdata,    
-    S_AXIS_MM2S_CMD_0_tready    => S_DMA_MM2S_CMD_0_tready,      
-    S_AXIS_MM2S_CMD_0_tvalid    => S_DMA_MM2S_CMD_0_tvalid,      
-    S_AXIS_S2MM_0_tdata         => S_DMA_S2MM_0_tdata,
-    S_AXIS_S2MM_0_tkeep         => S_DMA_S2MM_0_tkeep,
-    S_AXIS_S2MM_0_tlast         => S_DMA_S2MM_0_tlast,
-    S_AXIS_S2MM_0_tready        => S_DMA_S2MM_0_tready,  
-    S_AXIS_S2MM_0_tvalid        => S_DMA_S2MM_0_tvalid,  
-    S_AXIS_S2MM_CMD_0_tdata     => S_DMA_S2MM_CMD_0_tdata,    
-    S_AXIS_S2MM_CMD_0_tready    => S_DMA_S2MM_CMD_0_tready,      
-    S_AXIS_S2MM_CMD_0_tvalid    => S_DMA_S2MM_CMD_0_tvalid      
+
+    M_AXIS_MM2S_0_tdata         => dma_interface_master.axis_mm2s_tdata,
+    M_AXIS_MM2S_0_tkeep         => open,
+    M_AXIS_MM2S_0_tlast         => dma_interface_master.axis_mm2s_tlast,
+    M_AXIS_MM2S_0_tready        => dma_interface_slave.axis_mm2s_tready,  
+    M_AXIS_MM2S_0_tvalid        => dma_interface_master.axis_mm2s_tvalid,    
+    S_AXIS_MM2S_CMD_0_tdata     => dma_interface_slave.mm2s_cmd_tdata,    
+    S_AXIS_MM2S_CMD_0_tready    => dma_interface_master.mm2s_cmd_tready,      
+    S_AXIS_MM2S_CMD_0_tvalid    => dma_interface_slave.mm2s_cmd_tvalid,      
+    S_AXIS_S2MM_0_tdata         => dma_interface_slave.axis_s2mm_tdata,
+    S_AXIS_S2MM_0_tkeep         => (others => '0'),
+    S_AXIS_S2MM_0_tlast         => dma_interface_slave.axis_s2mm_tlast,
+    S_AXIS_S2MM_0_tready        => dma_interface_master.axis_s2mm_tready,  
+    S_AXIS_S2MM_0_tvalid        => dma_interface_slave.axis_s2mm_tvalid,  
+    S_AXIS_S2MM_CMD_0_tdata     => dma_interface_slave.s2mm_cmd_tdata,    
+    S_AXIS_S2MM_CMD_0_tready    => dma_interface_master.s2mm_cmd_tready,      
+    S_AXIS_S2MM_CMD_0_tvalid    => dma_interface_slave.s2mm_cmd_tvalid
     
 );
 
 
 dma_controller_m_tready <= '1';
 
-iaxi_datamover_controller : entity work.axi_datamover_controller
+iaxi_dma_interface : entity work.axi_dma_interface
 generic map (
-  MM2S_DATA_WIDTH      => DMA_MM2S_DATA_WIDTH, 
-  S2MM_DATA_WIDTH      => DMA_S2MM_DATA_WIDTH, 
-  MM2S_MEM_DATA_WIDTH  => DMA_MM2S_MEM_DATA_WIDTH, 
-  S2MM_MEM_DATA_WIDTH  => DMA_S2MM_MEM_DATA_WIDTH, 
-  MM2S_MAX_BURST_SIZE  => DMA_MM2S_MAX_BURST_SIZE, 
-  S2MM_MAX_BURST_SIZE  => DMA_S2MM_MAX_BURST_SIZE, 
-  MM2S_BTT_WIDTH       => DMA_MM2S_BTT_WIDTH, 
-  S2MM_BTT_WIDTH       => DMA_S2MM_BTT_WIDTH, 
-  MM2S_CMD_WIDTH       => DMA_MM2S_CMD_WIDTH, 
-  S2MM_CMD_WIDTH       => DMA_S2MM_CMD_WIDTH, 
-  ADDRESS_WIDTH        => DMA_ADDRESS_WIDTH, 
+  AXIL_REG_BASE_ADDRESS => x"A0030000", 
   NUM_OF_WORDS_WIDTH   => DMA_NUM_OF_WORDS_WIDTH
 )
 port map(
   clk_i                => pl_clk0_0,
   reset_i              => '0',
 
-
-  write_address_i      => dma_controller_write_address, 
-  write_num_of_words_i => dma_controller_write_num_of_words,
-  write_start_i        => dma_controller_write_start,
-  read_address_i       => dma_controller_read_address,
-  read_num_of_words_i  => dma_controller_read_num_of_words,
-  read_start_i         => dma_controller_read_start,
   data_m_tdata_o       => dma_controller_m_tdata,
   data_m_tvalid_o      => dma_controller_m_tvalid,
   data_m_tready_i      => dma_controller_m_tready,
@@ -221,40 +193,14 @@ port map(
   data_s_tvalid_i      => dma_controller_s_tvalid,
   data_s_tready_o      => dma_controller_s_tready,
   data_s_tlast_i       => dma_controller_s_tlast,
-  
-  -- Axi Datamover interface
-  -- axi_datamover axis interface
-  axis_s2mm_tdata_o    => S_DMA_S2MM_0_tdata, 
-  axis_s2mm_tvalid_o   => S_DMA_S2MM_0_tvalid,
-  axis_s2mm_tready_i   => S_DMA_S2MM_0_tready,
-  axis_s2mm_tlast_o    => S_DMA_S2MM_0_tlast, 
-  axis_mm2s_tdata_i    => M_DMA_MM2S_0_tdata, 
-  axis_mm2s_tvalid_i   => M_DMA_MM2S_0_tvalid,
-  axis_mm2s_tready_o   => M_DMA_MM2S_0_tready,
-  axis_mm2s_tlast_i    => M_DMA_MM2S_0_tlast, 
-  
-  -- axi_datamover cmd interface
-  mm2s_cmd_m_tdata_o   => S_DMA_MM2S_CMD_0_tdata,
-  mm2s_cmd_m_tvalid_o  => S_DMA_MM2S_CMD_0_tvalid,  
-  mm2s_cmd_m_tready_i  => S_DMA_MM2S_CMD_0_tready,  
 
-  -- axi_datamover cmd interface
-  s2mm_cmd_m_tdata_o   => S_DMA_S2MM_CMD_0_tdata, 
-  s2mm_cmd_m_tvalid_o  => S_DMA_S2MM_CMD_0_tvalid,  
-  s2mm_cmd_m_tready_i  => S_DMA_S2MM_CMD_0_tready  
+  dma_interface_master_i   => dma_interface_master,
+  dma_interface_slave_o    => dma_interface_slave,
+  axil_reg_master_i        => dma_axil_reg_master,
+  axil_reg_slave_o         => dma_axil_reg_slave
 );
 
-dma_controller_write_start                      <= axil_write_regs(0)(0);
-dma_controller_write_address(31 downto 0)       <= unsigned(axil_write_regs(1)(31 downto 0));
-dma_controller_write_address(48 downto 32)      <= unsigned(axil_write_regs(2)(16 downto 0));
-dma_controller_write_num_of_words(31 downto 0)  <= unsigned(axil_write_regs(3)(31 downto 0));
-
-dma_controller_read_start                      <= axil_write_regs(4)(0);
-dma_controller_read_address(31 downto 0)       <= unsigned(axil_write_regs(5)(31 downto 0));
-dma_controller_read_address(48 downto 32)      <= unsigned(axil_write_regs(6)(16 downto 0));
-dma_controller_read_num_of_words(31 downto 0)  <= unsigned(axil_write_regs(7)(31 downto 0));
-
-iaxi_reg : entity work.axi_registers
+iglobal_axi_reg : entity work.axi_registers
 generic map (
   AXIL_BASE_ADDRESS   => x"A0020000",
   NUMBER_OF_REGISTERS => NUMBER_OF_AXIL_REGISTERS,
@@ -263,8 +209,8 @@ generic map (
 port map(
   clk_i             => pl_clk0_0,
   reset_i           => '0',
-  axil_master_i     => axil_master,
-  axil_slave_o      => axil_slave,
+  axil_master_i     => global_axil_reg_master,
+  axil_slave_o      => global_axil_reg_slave,
   read_reg_i        => (others=>( others =>'0')),
   write_reg_o       => axil_write_regs
 );
@@ -272,17 +218,11 @@ dma_controller_s_tdata <= std_logic_vector(counter(15 downto 0));
 process(pl_clk0_0)
 begin
  if rising_edge(pl_clk0_0) then
-    dma_controller_write_start_prev <= dma_controller_write_start;
-    if dma_controller_write_start_prev = '0' and dma_controller_write_start = '1' then
-        dma_controller_s_tvalid <= '1';
-        if dma_controller_s_tready = '1' then
-            counter <= counter + 1;
-        end if;
-    end if;
-    if dma_controller_write_start = '0' then 
-        dma_controller_s_tvalid <= '0';
-    end if;
     
+    dma_controller_s_tvalid <= '1';
+    if dma_controller_s_tready = '1' then
+        counter <= counter + 1;
+    end if; 
  end if;
 end process;
 
