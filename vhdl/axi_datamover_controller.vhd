@@ -98,13 +98,13 @@ architecture Behavioral of axi_datamover_controller is
 --  attribute mark_debug of read_bytes_remain: signal is "true";
 --  attribute mark_debug of read_bytes_counter: signal is "true";
 --  attribute mark_debug of write_prev: signal is "true";
-  attribute mark_debug of last_write_transfer: signal is "true";
-  attribute mark_debug of write_address_reg: signal is "true";
-  attribute mark_debug of write_bytes_remain: signal is "true";
-  attribute mark_debug of write_bytes_counter: signal is "true";
+--  attribute mark_debug of last_write_transfer: signal is "true";
+--  attribute mark_debug of write_address_reg: signal is "true";
+--  attribute mark_debug of write_bytes_remain: signal is "true";
+--  attribute mark_debug of write_bytes_counter: signal is "true";
   attribute mark_debug of datamover_read_sm: signal is "true";
   attribute mark_debug of datamover_write_sm: signal is "true";
-  attribute mark_debug of s2mm_sts_tvalid_i: signal is "true"; 
+--  attribute mark_debug of s2mm_sts_tvalid_i: signal is "true"; 
 begin
   data_s_tready_o <= axis_s2mm_tready_i and write_enable;
   axis_mm2s_tready_o <= data_m_tready_i;
