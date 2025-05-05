@@ -41,8 +41,9 @@ end top;
 
 architecture Behavioral of top is
 
-constant  DMA_NUM_OF_WORDS_WIDTH  : natural := 32;
-
+constant DMA_NUM_OF_WORDS_WIDTH  : natural := 32;
+constant MNIST_MODEL_OUTPUT_W    : natural := 10;
+constant MNIST_MODEL_OUTPUT_DATA_W    : natural := 16;
 
 signal pl_clk0_0 : std_logic;
 signal counter   : unsigned(31 downto 0);
@@ -65,21 +66,37 @@ signal dma_controller_s_tlast               : std_logic;
 signal dma_controller_write_start_prev      : std_logic;
 signal dma_interface_master                 : dma_ports_master_t;
 signal dma_interface_slave                  : dma_ports_slave_t;
+signal mnist_model_out_data                 : array_slv_t(MNIST_MODEL_OUTPUT_W - 1 downto 0)(MNIST_MODEL_OUTPUT_DATA_W - 1 downto 0);
+signal mnist_model_out_valid                : std_logic_vector(MNIST_MODEL_OUTPUT_W - 1 downto 0);
+signal mnist_start                          : std_logic;  
+signal mnist_start_prev                     : std_logic;      
+signal mnist_model_ap_done                  : std_logic;          
+signal mnist_model_ap_idle                  : std_logic;          
+signal mnist_model_ap_ready                 : std_logic;          
+signal mnist_model_ap_start                 : std_logic;          
 attribute mark_debug : string;
 --attribute mark_debug of counter: signal is "true";
 --attribute mark_debug of gpio_out: signal is "true";
 --attribute mark_debug of axil_master: signal is "true";
-attribute mark_debug of dma_interface_master: signal is "true";
-attribute mark_debug of dma_interface_slave: signal is "true";
+--attribute mark_debug of dma_interface_master: signal is "true";
+--attribute mark_debug of dma_interface_slave: signal is "true";
 
 attribute mark_debug of dma_controller_m_tdata   : signal is "true";
 attribute mark_debug of dma_controller_m_tvalid  : signal is "true";
 attribute mark_debug of dma_controller_m_tready  : signal is "true";
 attribute mark_debug of dma_controller_m_tlast   : signal is "true";
-attribute mark_debug of dma_controller_s_tdata   : signal is "true";
-attribute mark_debug of dma_controller_s_tvalid  : signal is "true";
-attribute mark_debug of dma_controller_s_tready  : signal is "true";
-attribute mark_debug of dma_controller_s_tlast   : signal is "true";
+attribute mark_debug of mnist_model_out_data    : signal is "true";
+attribute mark_debug of mnist_model_out_valid   : signal is "true";
+attribute mark_debug of mnist_start             : signal is "true"; 
+attribute mark_debug of mnist_start_prev        : signal is "true";      
+attribute mark_debug of mnist_model_ap_done     : signal is "true";        
+attribute mark_debug of mnist_model_ap_idle     : signal is "true";        
+attribute mark_debug of mnist_model_ap_ready    : signal is "true";          
+attribute mark_debug of mnist_model_ap_start    : signal is "true";          
+--attribute mark_debug of dma_controller_s_tdata   : signal is "true";
+--attribute mark_debug of dma_controller_s_tvalid  : signal is "true";
+--attribute mark_debug of dma_controller_s_tready  : signal is "true";
+--attribute mark_debug of dma_controller_s_tlast   : signal is "true";
 
 begin
 ibd_1 : entity work.design_1_wrapper
@@ -158,12 +175,43 @@ port map(
     S_AXIS_S2MM_0_tvalid        => dma_interface_slave.axis_s2mm_tvalid,  
     S_AXIS_S2MM_CMD_0_tdata     => dma_interface_slave.s2mm_cmd_tdata,    
     S_AXIS_S2MM_CMD_0_tready    => dma_interface_master.s2mm_cmd_tready,      
-    S_AXIS_S2MM_CMD_0_tvalid    => dma_interface_slave.s2mm_cmd_tvalid
+    S_AXIS_S2MM_CMD_0_tvalid    => dma_interface_slave.s2mm_cmd_tvalid,
+
+    ap_ctrl_0_done              => mnist_model_ap_done,
+    ap_ctrl_0_idle              => mnist_model_ap_idle,
+    ap_ctrl_0_ready             => mnist_model_ap_ready,
+    ap_ctrl_0_start             => mnist_model_ap_start,
+
+    input_1_0_tdata             => dma_controller_m_tdata,
+    input_1_0_tready            => dma_controller_m_tready,
+    input_1_0_tvalid            => dma_controller_m_tvalid,
+
+    layer5_out_0_0              => mnist_model_out_data(0),
+    layer5_out_0_ap_vld_0       => mnist_model_out_valid(0),      
+    layer5_out_1_0              => mnist_model_out_data(1),
+    layer5_out_1_ap_vld_0       => mnist_model_out_valid(1),      
+    layer5_out_2_0              => mnist_model_out_data(2),
+    layer5_out_2_ap_vld_0       => mnist_model_out_valid(2),      
+    layer5_out_3_0              => mnist_model_out_data(3),
+    layer5_out_3_ap_vld_0       => mnist_model_out_valid(3),      
+    layer5_out_4_0              => mnist_model_out_data(4),
+    layer5_out_4_ap_vld_0       => mnist_model_out_valid(4),      
+    layer5_out_5_0              => mnist_model_out_data(5),
+    layer5_out_5_ap_vld_0       => mnist_model_out_valid(5),      
+    layer5_out_6_0              => mnist_model_out_data(6),
+    layer5_out_6_ap_vld_0       => mnist_model_out_valid(6),      
+    layer5_out_7_0              => mnist_model_out_data(7),
+    layer5_out_7_ap_vld_0       => mnist_model_out_valid(7),      
+    layer5_out_8_0              => mnist_model_out_data(8),
+    layer5_out_8_ap_vld_0       => mnist_model_out_valid(8),      
+    layer5_out_9_0              => mnist_model_out_data(9),
+    layer5_out_9_ap_vld_0       => mnist_model_out_valid(9),
+    ap_rst_n_0                  => '1'
     
 );
 
 
-dma_controller_m_tready <= '1';
+--dma_controller_m_tready <= '1';
 
 iaxi_dma_interface : entity work.axi_dma_interface
 generic map (
@@ -204,10 +252,17 @@ port map(
   write_reg_o       => axil_write_regs
 );
 dma_controller_s_tdata <= std_logic_vector(counter(15 downto 0));
+mnist_start<= axil_write_regs(0)(0);
 process(pl_clk0_0)
 begin
  if rising_edge(pl_clk0_0) then
-    
+    mnist_start_prev <= mnist_start;
+    if mnist_start = '1' and mnist_start_prev = '1' then
+      mnist_model_ap_start <='1';
+    end if;
+    if mnist_model_ap_start = '1' and mnist_model_ap_ready = '1' then 
+      mnist_model_ap_start <= '0';
+    end if;
     dma_controller_s_tvalid <= '1';
     if dma_controller_s_tready = '1' then
         counter <= counter + 1;
