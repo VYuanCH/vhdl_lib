@@ -73,7 +73,7 @@ signal mnist_start_prev                     : std_logic;
 signal mnist_model_ap_done                  : std_logic;          
 signal mnist_model_ap_idle                  : std_logic;          
 signal mnist_model_ap_ready                 : std_logic;          
-signal mnist_model_ap_start                 : std_logic;          
+signal mnist_model_ap_start                 : std_logic:='0';          
 attribute mark_debug : string;
 --attribute mark_debug of counter: signal is "true";
 --attribute mark_debug of gpio_out: signal is "true";
@@ -257,12 +257,16 @@ process(pl_clk0_0)
 begin
  if rising_edge(pl_clk0_0) then
     mnist_start_prev <= mnist_start;
-    if mnist_start = '1' and mnist_start_prev = '1' then
+    
+    if mnist_start = '1' and mnist_start_prev = '0' then
       mnist_model_ap_start <='1';
     end if;
     if mnist_model_ap_start = '1' and mnist_model_ap_ready = '1' then 
       mnist_model_ap_start <= '0';
     end if;
+    --if mnist_model_ap_start = '1' and mnist_model_ap_idle = '1' then 
+    
+    --end if;
     dma_controller_s_tvalid <= '1';
     if dma_controller_s_tready = '1' then
         counter <= counter + 1;
