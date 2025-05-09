@@ -40,7 +40,7 @@ begin
     
     if src_valid_i = '1' then
       max_data_tree(2**ceil_log2(NUMBER_OF_INPUTS) to 2**ceil_log2(NUMBER_OF_INPUTS) + NUMBER_OF_INPUTS - 1) <= src_data_i;
-      max_data_tree(2**ceil_log2(NUMBER_OF_INPUTS) + NUMBER_OF_INPUTS to MAX_TREE_FULL_SIZE - 1 ) <= (others=>(others=>'0'));
+      max_data_tree(2**ceil_log2(NUMBER_OF_INPUTS) + NUMBER_OF_INPUTS to MAX_TREE_FULL_SIZE - 1 ) <= (others=>(DATA_W - 1 =>'1',others=>'0'));
     end if;
     valid_sr(0) <= src_valid_i;
     valid_sr(1 to ceil_log2(NUMBER_OF_INPUTS)) <= valid_sr(0 to ceil_log2(NUMBER_OF_INPUTS) - 1);
