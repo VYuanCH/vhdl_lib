@@ -29,7 +29,7 @@ use IEEE.NUMERIC_STD.ALL;
 use work.axil_interface_pkg.all;
 use work.array_types.all;
 use work.axi_datamover_pkg.all;
-
+use work.basic_pkg.all;
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
 --library UNISIM;
@@ -54,7 +54,7 @@ signal global_axil_reg_slave   : axil_slave_t;
 signal dma_axil_reg_master  : axil_master_t;
 signal dma_axil_reg_slave   : axil_slave_t;
 signal axil_write_regs  : array_slv_t(NUMBER_OF_AXIL_REGISTERS - 1 downto 0)(AXIL_DATA_W - 1 downto 0);
-
+signal axil_read_regs  : array_slv_t(NUMBER_OF_AXIL_REGISTERS - 1 downto 0)(AXIL_DATA_W - 1 downto 0);
 signal dma_controller_m_tdata               : std_logic_vector(MM2S_DATA_WIDTH - 1 downto 0); 
 signal dma_controller_m_tvalid              : std_logic;   
 signal dma_controller_m_tready              : std_logic;   
@@ -66,14 +66,25 @@ signal dma_controller_s_tlast               : std_logic;
 signal dma_controller_write_start_prev      : std_logic;
 signal dma_interface_master                 : dma_ports_master_t;
 signal dma_interface_slave                  : dma_ports_slave_t;
-signal mnist_model_out_data                 : array_slv_t(MNIST_MODEL_OUTPUT_W - 1 downto 0)(MNIST_MODEL_OUTPUT_DATA_W - 1 downto 0);
+signal mnist_model_out_data                 : array_unsigned_t(MNIST_MODEL_OUTPUT_W - 1 downto 0)(MNIST_MODEL_OUTPUT_DATA_W - 1 downto 0);
 signal mnist_model_out_valid                : std_logic_vector(MNIST_MODEL_OUTPUT_W - 1 downto 0);
 signal mnist_start                          : std_logic;  
 signal mnist_start_prev                     : std_logic;      
 signal mnist_model_ap_done                  : std_logic;          
 signal mnist_model_ap_idle                  : std_logic;          
 signal mnist_model_ap_ready                 : std_logic;          
-signal mnist_model_ap_start                 : std_logic:='0';          
+signal mnist_model_ap_start                 : std_logic:='0'; 
+signal find_max_dst_max_index               : unsigned(ceil_log2(MNIST_MODEL_OUTPUT_W) - 1 downto 0);
+signal find_max_dst_valid                   : std_logic:='0'; 
+signal clear_data_available                 : std_logic:='0'; 
+constant GLOBAL_REG_WRITE_MASK              : std_logic_vector(NUMBER_OF_AXIL_REGISTERS - 1 downto 0):=(
+                                            0=>'1',
+                                            1=>'0',
+                                            2=>'0',
+                                            3=>'1',
+                                            others=>'1'
+                                            );     
+        
 attribute mark_debug : string;
 --attribute mark_debug of counter: signal is "true";
 --attribute mark_debug of gpio_out: signal is "true";
@@ -92,7 +103,12 @@ attribute mark_debug of mnist_start_prev        : signal is "true";
 attribute mark_debug of mnist_model_ap_done     : signal is "true";        
 attribute mark_debug of mnist_model_ap_idle     : signal is "true";        
 attribute mark_debug of mnist_model_ap_ready    : signal is "true";          
-attribute mark_debug of mnist_model_ap_start    : signal is "true";          
+attribute mark_debug of mnist_model_ap_start    : signal is "true";  
+      
+attribute mark_debug of find_max_dst_max_index  : signal is "true";        
+attribute mark_debug of find_max_dst_valid      : signal is "true";          
+attribute mark_debug of clear_data_available    : signal is "true";  
+attribute mark_debug of axil_read_regs          : signal is "true";  
 --attribute mark_debug of dma_controller_s_tdata   : signal is "true";
 --attribute mark_debug of dma_controller_s_tvalid  : signal is "true";
 --attribute mark_debug of dma_controller_s_tready  : signal is "true";
@@ -186,25 +202,25 @@ port map(
     input_1_0_tready            => dma_controller_m_tready,
     input_1_0_tvalid            => dma_controller_m_tvalid,
 
-    layer5_out_0_0              => mnist_model_out_data(0),
+    unsigned(layer5_out_0_0)    => mnist_model_out_data(0),
     layer5_out_0_ap_vld_0       => mnist_model_out_valid(0),      
-    layer5_out_1_0              => mnist_model_out_data(1),
+    unsigned(layer5_out_1_0)    => mnist_model_out_data(1),
     layer5_out_1_ap_vld_0       => mnist_model_out_valid(1),      
-    layer5_out_2_0              => mnist_model_out_data(2),
+    unsigned(layer5_out_2_0)    => mnist_model_out_data(2),
     layer5_out_2_ap_vld_0       => mnist_model_out_valid(2),      
-    layer5_out_3_0              => mnist_model_out_data(3),
+    unsigned(layer5_out_3_0)    => mnist_model_out_data(3),
     layer5_out_3_ap_vld_0       => mnist_model_out_valid(3),      
-    layer5_out_4_0              => mnist_model_out_data(4),
+    unsigned(layer5_out_4_0)    => mnist_model_out_data(4),
     layer5_out_4_ap_vld_0       => mnist_model_out_valid(4),      
-    layer5_out_5_0              => mnist_model_out_data(5),
+    unsigned(layer5_out_5_0)    => mnist_model_out_data(5),
     layer5_out_5_ap_vld_0       => mnist_model_out_valid(5),      
-    layer5_out_6_0              => mnist_model_out_data(6),
+    unsigned(layer5_out_6_0)    => mnist_model_out_data(6),
     layer5_out_6_ap_vld_0       => mnist_model_out_valid(6),      
-    layer5_out_7_0              => mnist_model_out_data(7),
+    unsigned(layer5_out_7_0)    => mnist_model_out_data(7),
     layer5_out_7_ap_vld_0       => mnist_model_out_valid(7),      
-    layer5_out_8_0              => mnist_model_out_data(8),
+    unsigned(layer5_out_8_0)    => mnist_model_out_data(8),
     layer5_out_8_ap_vld_0       => mnist_model_out_valid(8),      
-    layer5_out_9_0              => mnist_model_out_data(9),
+    unsigned(layer5_out_9_0)    => mnist_model_out_data(9),
     layer5_out_9_ap_vld_0       => mnist_model_out_valid(9),
     ap_rst_n_0                  => '1'
     
@@ -241,21 +257,47 @@ iglobal_axi_reg : entity work.axi_registers
 generic map (
   AXIL_BASE_ADDRESS   => x"A0020000",
   NUMBER_OF_REGISTERS => NUMBER_OF_AXIL_REGISTERS,
-  WRITE_MASK          => (others =>'1')
+  WRITE_MASK          => GLOBAL_REG_WRITE_MASK
 )
 port map(
   clk_i             => pl_clk0_0,
   reset_i           => '0',
   axil_master_i     => global_axil_reg_master,
   axil_slave_o      => global_axil_reg_slave,
-  read_reg_i        => (others=>( others =>'0')),
+  read_reg_i        => axil_read_regs,
   write_reg_o       => axil_write_regs
 );
 dma_controller_s_tdata <= std_logic_vector(counter(15 downto 0));
 mnist_start<= axil_write_regs(0)(0);
+clear_data_available <= axil_write_regs(3)(0);
+
+i_find_max : entity work.find_max_unsigned
+  generic map (
+      NUMBER_OF_INPUTS  => 10,
+      DATA_W            => MNIST_MODEL_OUTPUT_DATA_W
+  )
+  port map(
+      clk_i               => pl_clk0_0,
+      reset_i             => '0',
+      src_data_i          => mnist_model_out_data,
+      src_valid_i         => and(mnist_model_out_valid),
+      dst_max_data_o      => open,
+      dst_max_index_o      => find_max_dst_max_index,
+      dst_valid_o         => find_max_dst_valid
+  );
+
 process(pl_clk0_0)
 begin
  if rising_edge(pl_clk0_0) then
+    if find_max_dst_valid = '1' then
+      axil_read_regs(1)(0)<= '1';
+      axil_read_regs(2)(ceil_log2(MNIST_MODEL_OUTPUT_DATA_W) - 1 downto 0) <= std_logic_vector(find_max_dst_max_index);
+      axil_read_regs(2)(AXIL_DATA_W - 1 downto ceil_log2(MNIST_MODEL_OUTPUT_DATA_W)) <= (others =>'0');
+    end if;
+    if clear_data_available = '1' then
+      axil_read_regs(3)(0)<= '0';
+    end if;
+    
     mnist_start_prev <= mnist_start;
     
     if mnist_start = '1' and mnist_start_prev = '0' then
