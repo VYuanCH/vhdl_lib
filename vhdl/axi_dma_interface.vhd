@@ -6,7 +6,7 @@ use work.axil_interface_pkg.all;
 use work.array_types.all;
 use work.basic_pkg.all;
 use work.axi_datamover_pkg.all;
-use work.axil_reg_dma_pkg.all;
+use work.axi_reg_datamover_pkg.all;
 use work.axil_interface_pkg.all;
 
 entity axi_dma_interface is
@@ -46,7 +46,6 @@ architecture Behavioral of axi_dma_interface is
   signal axil_write_regs  : array_slv_t(NUMBER_OF_REG - 1 downto 0)(AXIL_DATA_W - 1 downto 0);
   signal axil_read_regs   : array_slv_t(NUMBER_OF_REG - 1 downto 0)(AXIL_DATA_W - 1 downto 0);
 begin
-
 
   dma_controller_write_start                      <= axil_write_regs(WRITE_START_IDX)(0);
   dma_controller_write_address(31 downto 0)       <= unsigned(axil_write_regs(WRITE_ADDRESS_L_IDX)(31 downto 0));
@@ -94,8 +93,7 @@ begin
     data_s_tdata_i       => data_s_tdata_i,
     data_s_tvalid_i      => data_s_tvalid_i,
     data_s_tready_o      => data_s_tready_o,
-    data_s_tlast_i       => data_s_tlast_i,
-    
+    data_s_tlast_i       => data_s_tlast_i,    
     -- Axi Datamover interface
     -- axi_datamover axis interface
     axis_s2mm_tdata_o    => dma_interface_slave_o.axis_s2mm_tdata, 
@@ -121,7 +119,5 @@ begin
     s2mm_sts_tready_o  => dma_interface_slave_o.s2mm_sts_tready 
     
   );
-
-
 
 end Behavioral;

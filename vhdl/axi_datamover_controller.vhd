@@ -90,34 +90,18 @@ architecture Behavioral of axi_datamover_controller is
   signal write_bytes_remain         : unsigned(NUM_OF_WORDS_WIDTH + ceil_log2(BYTES_EACH_WORD_WRITE) downto 0);        
   signal write_bytes_counter        : unsigned(NUM_OF_WORDS_WIDTH + ceil_log2(BYTES_EACH_WORD_WRITE) downto 0); 
   signal write_enable               : std_logic := '0';
-  attribute mark_debug : string;
---  attribute mark_debug of read_prev: signal is "true";
---  attribute mark_debug of last_read_transfer: signal is "true";
---  attribute mark_debug of read_address_reg: signal is "true";
---  attribute mark_debug of read_num_of_words_reg: signal is "true";
---  attribute mark_debug of read_bytes_remain: signal is "true";
---  attribute mark_debug of read_bytes_counter: signal is "true";
---  attribute mark_debug of write_prev: signal is "true";
---  attribute mark_debug of last_write_transfer: signal is "true";
---  attribute mark_debug of write_address_reg: signal is "true";
---  attribute mark_debug of write_bytes_remain: signal is "true";
---  attribute mark_debug of write_bytes_counter: signal is "true";
-  attribute mark_debug of datamover_read_sm: signal is "true";
-  attribute mark_debug of datamover_write_sm: signal is "true";
---  attribute mark_debug of s2mm_sts_tvalid_i: signal is "true"; 
+
 begin
+
   data_s_tready_o <= axis_s2mm_tready_i and write_enable;
   axis_mm2s_tready_o <= data_m_tready_i;
 
   data_m_tdata_o <= axis_mm2s_tdata_i;
   data_m_tvalid_o <= axis_mm2s_tvalid_i;
   
-  
   axis_s2mm_tdata_o <= data_s_tdata_i;
   axis_s2mm_tvalid_o <= data_s_tvalid_i and write_enable;
   
-  -- need to connect input/output axis 
-  -- need to sort out words/bytes;
   process(clk_i)
   begin
     if rising_edge(clk_i) then
@@ -136,7 +120,7 @@ begin
           read_bytes_remain <= to_unsigned(BYTES_EACH_WORD_READ,ceil_log2(BYTES_EACH_WORD_READ)+1) * read_num_of_words_reg;
           datamover_read_sm <= SET_CMD;
 
-        when SET_CMD =>
+        when SET_CMD => -- Axi datamover should be in full mode. 
           mm2s_cmd_m_tdata_o(22 downto MM2S_BTT_WIDTH)    <= (others =>'0');
           if read_bytes_remain > TRANSFER_SIZE_BYTES then
             mm2s_cmd_m_tdata_o(MM2S_BTT_WIDTH - 1 downto 0) <= std_logic_vector(to_unsigned(TRANSFER_SIZE_BYTES,MM2S_BTT_WIDTH));
@@ -153,10 +137,9 @@ begin
           mm2s_cmd_m_tdata_o(ADDR_BYTES + 31 downto 32) <= std_logic_vector(resize(read_address_reg,ADDR_BYTES));
           mm2s_cmd_m_tdata_o(ADDR_BYTES + 35 downto ADDR_BYTES + 32) <= (others => '0');
           mm2s_cmd_m_tdata_o(ADDR_BYTES + 39 downto ADDR_BYTES + 36) <= (others => '0');
---          mm2s_cmd_m_tdata_o(ADDR_BYTES + 43 downto ADDR_BYTES + 40) <= (others => '0');
---          mm2s_cmd_m_tdata_o(ADDR_BYTES + 47 downto ADDR_BYTES + 44) <= (others => '0');
           mm2s_cmd_m_tvalid_o <= '1';
           datamover_read_sm <= WAIT_CMD_READY;
+
         when WAIT_CMD_READY =>
           if mm2s_cmd_m_tready_i = '1' then
             mm2s_cmd_m_tvalid_o <= '0';
@@ -220,11 +203,12 @@ begin
             write_num_of_words_reg <= write_num_of_words_i;
             datamover_write_sm <= INIT;
           end if;
+
         when INIT =>
           write_bytes_remain <= to_unsigned(BYTES_EACH_WORD_WRITE,ceil_log2(BYTES_EACH_WORD_WRITE)+1) * write_num_of_words_reg;
           datamover_write_sm <= SET_CMD;
 
-        when SET_CMD =>
+        when SET_CMD => -- Axi datamover should be in full mode.
           s2mm_cmd_m_tdata_o(22 downto S2MM_BTT_WIDTH)    <= (others =>'0');
           datamover_write_sm <= WAIT_CMD_READY;
           if write_bytes_remain > TRANSFER_SIZE_BYTES then
@@ -242,8 +226,6 @@ begin
           s2mm_cmd_m_tdata_o(ADDR_BYTES + 31 downto 32) <= std_logic_vector(resize(write_address_reg,ADDR_BYTES));
           s2mm_cmd_m_tdata_o(ADDR_BYTES + 35 downto ADDR_BYTES + 32) <= (others => '0');
           s2mm_cmd_m_tdata_o(ADDR_BYTES + 39 downto ADDR_BYTES + 36) <= (others => '0');
---          s2mm_cmd_m_tdata_o(ADDR_BYTES + 43 downto ADDR_BYTES + 40) <= (others => '0');
---          s2mm_cmd_m_tdata_o(ADDR_BYTES + 47 downto ADDR_BYTES + 44) <= (others => '0');
           s2mm_cmd_m_tvalid_o <= '1';
           
         when WAIT_CMD_READY =>
@@ -251,12 +233,10 @@ begin
             s2mm_cmd_m_tvalid_o <= '0';
             datamover_write_sm <= WRITE_DATA;
             write_enable <= '1';
-           
             if write_bytes_counter = 0 then -- Special case where there is only 1 words to write
               datamover_write_sm <= WAIT_FOR_LAST_SAMPLE;
               axis_s2mm_tlast_o <= '1';
             end if;
-
           end if;
           
         when WRITE_DATA =>
