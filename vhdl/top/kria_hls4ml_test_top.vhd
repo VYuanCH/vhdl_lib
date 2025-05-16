@@ -68,6 +68,8 @@ signal dma_interface_master                 : dma_ports_master_t;
 signal dma_interface_slave                  : dma_ports_slave_t;
 signal mnist_model_out_data                 : array_unsigned_t(MNIST_MODEL_OUTPUT_W - 1 downto 0)(MNIST_MODEL_OUTPUT_DATA_W - 1 downto 0);
 signal mnist_model_out_valid                : std_logic_vector(MNIST_MODEL_OUTPUT_W - 1 downto 0);
+signal serialised_data                      : unsigned(MNIST_MODEL_OUTPUT_DATA_W - 1 downto 0);
+signal serialised_data_valid                : std_logic;
 signal mnist_start                          : std_logic;  
 signal mnist_start_prev                     : std_logic;      
 signal mnist_model_ap_done                  : std_logic;          
@@ -109,6 +111,8 @@ attribute mark_debug of find_max_dst_max_index  : signal is "true";
 attribute mark_debug of find_max_dst_valid      : signal is "true";          
 attribute mark_debug of clear_data_available    : signal is "true";  
 attribute mark_debug of axil_read_regs          : signal is "true";  
+attribute mark_debug of serialised_data    : signal is "true";  
+attribute mark_debug of serialised_data_valid          : signal is "true";  
 --attribute mark_debug of dma_controller_s_tdata   : signal is "true";
 --attribute mark_debug of dma_controller_s_tvalid  : signal is "true";
 --attribute mark_debug of dma_controller_s_tready  : signal is "true";
@@ -284,6 +288,23 @@ i_find_max : entity work.find_max_unsigned
       dst_max_data_o      => open,
       dst_max_index_o      => find_max_dst_max_index,
       dst_valid_o         => find_max_dst_valid
+  );
+
+
+  iserialse_data : entity work.serialise_data_valid_driven
+  generic map (
+      NUMBER_OF_INPUTS  => 10,
+      DATA_W            => MNIST_MODEL_OUTPUT_DATA_W
+  )
+  port map(
+      clk_i               => pl_clk0_0,
+      reset_i             => '0',
+      src_data_i          => to_array_slv(mnist_model_out_data),
+      src_valid_i         => mnist_model_out_valid,
+      src_ready_o         => open,
+      unsigned(dst_data_o)      => serialised_data,
+      dst_ready_i         => '1',
+      dst_valid_o         => serialised_data_valid
   );
 
 process(pl_clk0_0)
