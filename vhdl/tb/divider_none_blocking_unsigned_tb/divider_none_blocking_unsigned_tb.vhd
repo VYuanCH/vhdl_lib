@@ -21,7 +21,6 @@ architecture behavior of divider_none_blocking_unsigned_tb is
   signal dst_quotient    : unsigned(DATA_W - 1 downto 0):= (others => '0');
   signal dst_remainder   : unsigned(DATA_W - 1 downto 0):= (others => '0');
   signal dst_valid  : std_logic := '0';
-  signal dst_ready  : std_logic := '0';
   signal clock_counter : unsigned(31 downto 0) := (others => '0');
 
     -- Clock period definition

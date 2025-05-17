@@ -38,8 +38,7 @@ begin
       quotient_reg(0) <= (others => '0');
       dividend_reg(0) <= src_dividend_i;
       valid_reg(0) <= src_valid_i;
-      for i in 0 to DATA_W - 1 loop
-        --partial_remainder_reg(i)(DATA_W * 2 - i - 2 downto DATA_W * 2 - i - 1) <= partial_remainder_reg(i - 1)(DATA_W * 2 - 1 - i downto DATA_W * 2 - i); 
+      for i in 0 to DATA_W - 1 loop 
         partial_remainder_reg(i+1) <= (others => '0');
         partial_remainder_reg(i+1)(DATA_W * 2 - i - 2 downto DATA_W - i - 1) <= partial_remainder_reg(i)(DATA_W * 2 - 1 - i downto DATA_W - i); 
         quotient_reg(i+1) <= quotient_reg(i);
