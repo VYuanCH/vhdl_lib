@@ -79,6 +79,11 @@ signal mnist_model_ap_start                 : std_logic:='0';
 signal find_max_dst_max_index               : unsigned(ceil_log2(MNIST_MODEL_OUTPUT_W) - 1 downto 0);
 signal find_max_dst_valid                   : std_logic:='0'; 
 signal clear_data_available                 : std_logic:='0'; 
+
+signal dst_quotient    : unsigned(MNIST_MODEL_OUTPUT_DATA_W - 1 downto 0):= (others => '0');
+signal dst_remainder   : unsigned(MNIST_MODEL_OUTPUT_DATA_W - 1 downto 0):= (others => '0');
+signal dst_valid       : std_logic := '0';
+
 constant GLOBAL_REG_WRITE_MASK              : std_logic_vector(NUMBER_OF_AXIL_REGISTERS - 1 downto 0):=(
                                             0=>'1',
                                             1=>'0',
@@ -113,6 +118,10 @@ attribute mark_debug of clear_data_available    : signal is "true";
 attribute mark_debug of axil_read_regs          : signal is "true";  
 attribute mark_debug of serialised_data    : signal is "true";  
 attribute mark_debug of serialised_data_valid          : signal is "true";  
+
+attribute mark_debug of dst_quotient       : signal is "true";  
+attribute mark_debug of dst_remainder      : signal is "true";  
+attribute mark_debug of dst_valid          : signal is "true";  
 --attribute mark_debug of dma_controller_s_tdata   : signal is "true";
 --attribute mark_debug of dma_controller_s_tvalid  : signal is "true";
 --attribute mark_debug of dma_controller_s_tready  : signal is "true";
@@ -305,6 +314,22 @@ i_find_max : entity work.find_max_unsigned
       unsigned(dst_data_o)      => serialised_data,
       dst_ready_i         => '1',
       dst_valid_o         => serialised_data_valid
+  );
+
+
+  i_divider_none_blocking_unsigned : entity work.divider_none_blocking_unsigned
+  generic map (
+    DATA_W            => MNIST_MODEL_OUTPUT_DATA_W
+  )
+  port map(
+    clk_i               => pl_clk0_0,
+    reset_i             => '0',
+    src_dividend_i      => mnist_model_out_data(0),
+    src_divisor_i       => mnist_model_out_data(1),
+    src_valid_i         => mnist_model_out_valid(0),
+    dst_quotient_o      => dst_quotient,
+    dst_remainder_o     => dst_remainder,
+    dst_valid_o         => dst_valid
   );
 
 process(pl_clk0_0)
