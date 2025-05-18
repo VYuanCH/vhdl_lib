@@ -7,7 +7,7 @@ use work.array_types.all;
 use work.basic_pkg.all;
 use work.axi_datamover_pkg.all;
 use work.axi_reg_datamover_pkg.all;
-use work.axil_interface_pkg.all;
+
 
 entity axi_dma_interface is
   generic (
@@ -43,8 +43,8 @@ architecture Behavioral of axi_dma_interface is
   signal dma_controller_read_address          : unsigned(ADDRESS_WIDTH - 1 downto 0);       
   signal dma_controller_read_num_of_words     : unsigned(NUM_OF_WORDS_WIDTH - 1 downto 0);           
   signal dma_controller_read_start            : std_logic;   
-  signal axil_write_regs  : array_slv_t(NUMBER_OF_REG - 1 downto 0)(AXIL_DATA_W - 1 downto 0);
-  signal axil_read_regs   : array_slv_t(NUMBER_OF_REG - 1 downto 0)(AXIL_DATA_W - 1 downto 0);
+  signal axil_write_regs  : array_slv_t(0 to NUMBER_OF_REG - 1)(AXIL_DATA_W - 1 downto 0);
+  signal axil_read_regs   : array_slv_t(0 to NUMBER_OF_REG - 1)(AXIL_DATA_W - 1 downto 0);
 begin
 
   dma_controller_write_start                      <= axil_write_regs(WRITE_START_IDX)(0);

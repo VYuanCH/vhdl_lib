@@ -18,8 +18,8 @@ entity axi_registers is
     reset_i         : in std_logic;
     axil_master_i   : in axil_master_t;
     axil_slave_o    : out axil_slave_t;
-    read_reg_i      : in array_slv_t(NUMBER_OF_REGISTERS - 1 downto 0)(AXIL_DATA_W - 1 downto 0);
-    write_reg_o     : out array_slv_t(NUMBER_OF_REGISTERS - 1 downto 0)(AXIL_DATA_W - 1 downto 0)
+    read_reg_i      : in array_slv_t(0 to NUMBER_OF_REGISTERS - 1)(AXIL_DATA_W - 1 downto 0);
+    write_reg_o     : out array_slv_t(0 to NUMBER_OF_REGISTERS - 1)(AXIL_DATA_W - 1 downto 0)
         
   );
 end entity;
@@ -35,7 +35,7 @@ signal read_addr           : unsigned(AXIL_ADDR_W - 1 downto 0);
 signal write_addr          : unsigned(AXIL_ADDR_W - 1 downto 0);
 signal read_reg_idx        : unsigned(AXIL_ADDR_W - BYTES_BITS_IN_ADDR - 1 downto 0);
 signal write_reg_idx       : unsigned(AXIL_ADDR_W - BYTES_BITS_IN_ADDR - 1 downto 0);
-signal write_registers     : array_slv_t(NUMBER_OF_REGISTERS - 1 downto 0)(AXIL_DATA_W - 1 downto 0);
+signal write_registers     : array_slv_t(0 to NUMBER_OF_REGISTERS - 1)(AXIL_DATA_W - 1 downto 0);
 attribute mark_debug : string;
 attribute mark_debug of axil_transaction_sm: signal is "true";
 attribute mark_debug of read_reg_idx: signal is "true";

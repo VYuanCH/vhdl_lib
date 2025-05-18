@@ -8,12 +8,13 @@ entity fir_filter is
   generic (
     NUMBER_OF_TAPS    : natural := 8;
     DATA_W            : natural := 16;
+    WEIGHTS_W         : natural := 18;
     WEIGHTS_FIXED_POINTS : natural := 15     
   );
   port (
     clk_i             : in std_logic;
     reset_i           : in std_logic;
-    weights_i         : in array_signed_t(0 to NUMBER_OF_TAPS - 1)(17 downto 0);
+    weights_i         : in array_signed_t(0 to NUMBER_OF_TAPS - 1)(WEIGHTS_W - 1 downto 0);
     src_data_r_i      : in signed(DATA_W - 1 downto 0);
     src_data_i_i      : in signed(DATA_W - 1 downto 0);
     src_data_valid_i  : in std_logic:= '1';
@@ -29,6 +30,7 @@ constant A_W            : natural := 30;
 constant B_W            : natural := 18;
 constant C_W            : natural := 48;
 constant P_W            : natural := 48;
+
 signal mult_out_imag          : array_signed_t(0 to NUMBER_OF_TAPS)(P_W - 1 downto 0);
 signal mult_out_real          : array_signed_t(0 to NUMBER_OF_TAPS)(P_W - 1 downto 0);
 signal mult_out_imag_truncate : signed(P_W - 1 downto 0);

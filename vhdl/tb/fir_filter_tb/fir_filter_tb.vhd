@@ -78,7 +78,7 @@ begin
         weights(5) <= to_signed(32768,18);
         weights(6) <= to_signed(32768,18);
         weights(7) <= to_signed(32768,18);
-        src_valid <= '1';
+        src_valid <= not src_valid;
         if clock_counter = 5 then
             reset <= '0';
         end if;
