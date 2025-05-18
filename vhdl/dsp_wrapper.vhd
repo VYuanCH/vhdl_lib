@@ -161,7 +161,7 @@ architecture Behavioral of dsp_wrapper is
       CEALUMODE => '1',                -- 1-bit input: Clock enable for ALUMODE
       CEB1 => ce_i,                     -- 1-bit input: Clock enable for 1st stage BREG
       CEB2 => '1',                     -- 1-bit input: Clock enable for 2nd stage BREG
-      CEC => '1',                      -- 1-bit input: Clock enable for CREG
+      CEC => ce_i,                      -- 1-bit input: Clock enable for CREG
       CECARRYIN => '1',                -- 1-bit input: Clock enable for CARRYINREG
       CECTRL => '1',                   -- 1-bit input: Clock enable for OPMODEREG and CARRYINSELREG
       CED => ce_i,                      -- 1-bit input: Clock enable for DREG

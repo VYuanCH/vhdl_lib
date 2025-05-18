@@ -29,16 +29,16 @@ constant ALUMODE       : std_logic_vector(3 downto 0):= "0000";
 constant CARRYINSEL    : std_logic_vector(2 downto 0):= "000";     
 constant INMODE        : std_logic_vector(4 downto 0):= "10001"; 
 constant OPMODE        : std_logic_vector(8 downto 0):= "110000101"; 
-constant LATENCY       : natural:= 3;
+constant LATENCY       : natural:= 1;
 signal valid_reg       : std_logic_vector(LATENCY - 1 downto 0) := (others=>'0');
-signal c_reg           : std_logic_vector(47 downto 0) := (others=>'0');
+--signal c_reg           : std_logic_vector(47 downto 0) := (others=>'0');
 begin
   process(clk_i)
   begin
     if rising_edge(clk_i) then
-        if valid_i = '1' then
-          c_reg <= c_i;
-        end if;
+--        if valid_i = '1' then
+--          c_reg <= c_i;
+--        end if;
         if reset_i = '0' then
           valid_reg(0) <= valid_i;
         end if;
@@ -63,7 +63,8 @@ begin
       AREG            => 1,
       BREG            => 1,
       CREG            => 1,
-      PREG            => 1
+      MREG            => 0,      
+      PREG            => 0
     )
     port map(
       clk_i           => clk_i,
@@ -71,7 +72,7 @@ begin
       ce_i            => valid_i,
       a_i             => a_i,
       b_i             => b_i,
-      c_i             => c_reg,
+      c_i             => c_i,
       p_o             => p_o
     );
   end generate;
