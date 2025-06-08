@@ -55,7 +55,7 @@ begin
   process(clk_i)
   begin
     if rising_edge(clk_i) then
-      for i in 0 to NUMBER_OF_TAPS loop
+      for i in 0 to NUMBER_OF_TAPS - 1 loop
         fir_weights(i) <= signed(axil_write_regs(FIR_WEIGHTS_START_IDX + i)(WEIGHTS_W - 1 downto 0));
       end loop;
     end if;

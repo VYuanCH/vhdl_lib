@@ -4,8 +4,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 package axi_datamover_pkg is
-   constant MM2S_DATA_WIDTH : natural := 16;
-   constant S2MM_DATA_WIDTH : natural := 16;
+   constant MM2S_DATA_WIDTH : natural := 32;
+   constant S2MM_DATA_WIDTH : natural := 32;
    constant MM2S_MEM_DATA_WIDTH : natural := 128;
    constant S2MM_MEM_DATA_WIDTH : natural := 128;
    constant MM2S_MAX_BURST_SIZE : natural := 256;
