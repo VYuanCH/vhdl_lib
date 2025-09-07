@@ -8,6 +8,10 @@ use work.basic_pkg.all;
 -- This module should be kept simple as it will likely be generated many copies for multiple axis modules
 -- Use Low buffer depth. 
 -- If more pipeline is required, it is preferred to generate multiple copies of this module and connect them in a chain.
+-- Todo: Add Tlast, it should go through the same buffering as tdata. 
+--       Complete all conditional statement so it does not infer unnecessary control sets
+--       Check implementation results and optimise for resource usage. 
+--       Add cocotb for more comprehensive testbench. Currently only basic testbenching is done 
 entity axis_skid_buffer is
   generic (
     BUFFER_DEPTH : natural := 2; -- Recommended depth: 2
